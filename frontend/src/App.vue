@@ -1,5 +1,5 @@
 <script setup>
-import Scheduler from './components/Scheduler/Scheduler.vue'
+import Scheduler from './components/Scheduler.vue'
 </script>
 
 <template>
