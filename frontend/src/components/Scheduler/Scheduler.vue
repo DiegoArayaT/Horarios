@@ -1,5 +1,11 @@
 <template>
   <div class="scheduler-container">
+    <div class="view-selector-top">
+      <label>Semestre:</label>
+      <select v-model="currentSemester" class="view-select">
+        <option v-for="s in semesters" :key="s" :value="s">{{ s }}</option>
+      </select>
+    </div>
     <div class="scheduler-content">
       <Sidebar
         :views="views"
@@ -19,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import Sidebar from './Sidebar.vue'
 import ScheduleTable from './ScheduleTable.vue'
@@ -28,6 +34,10 @@ import './Scheduler.css'
 // View options
 const views = ['Clases', 'Profesores', 'Salas']
 const currentView = ref('Classes')
+
+// Semesters
+const semesters = [1,2,3,4,5,6,7,8]
+const currentSemester = ref(1)
 
 // Days and timeslots
 const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado']
@@ -66,43 +76,58 @@ function emptyScheduleGrid() {
 }
 const schedule = reactive(emptyScheduleGrid())
 
+function clearSchedule() {
+  for (let i = 0; i < timeslots.length; i++) {
+    for (let j = 0; j < days.length; j++) {
+      schedule[i][j] = createEmptyCell()
+    }
+  }
+}
+
+async function loadSchedule() {
+  clearSchedule()
+  const scheduleRes = await axios.get('/api/schedule', {
+    params: { semester: currentSemester.value }
+  })
+
+  const classMap = Object.fromEntries(classesList.value.map(c => [c.id, c]))
+  const teacherMap = Object.fromEntries(teachersList.value.map(t => [t.id, t]))
+  const roomMap = Object.fromEntries(roomsList.value.map(r => [r.id, r]))
+
+  for (const cell of scheduleRes.data) {
+    const dayIndex = cell.day - 1
+    const slotIndex = cell.slot - 1
+    if (cell.class_id) {
+      const data = classMap[cell.class_id] || { name: cell.class_name, code: cell.class_code }
+      schedule[slotIndex][dayIndex].class = data
+    }
+    if (cell.teacher_id) {
+      schedule[slotIndex][dayIndex].professor = teacherMap[cell.teacher_id] || { name: cell.teacher_name }
+    }
+    if (cell.room_id) {
+      schedule[slotIndex][dayIndex].room = roomMap[cell.room_id] || { name: cell.room_name }
+    }
+  }
+}
+
 onMounted(async () => {
   try {
-    // Adapt this if your API returns { data: [...] }
-    const [classesRes, teachersRes, roomsRes, scheduleRes] = await Promise.all([
+    const [classesRes, teachersRes, roomsRes] = await Promise.all([
       axios.get('/api/classes'),
       axios.get('/api/teachers'),
-      axios.get('/api/rooms'),
-      axios.get('/api/schedule')
+      axios.get('/api/rooms')
     ])
-    // Direct array response:
     classesList.value = classesRes.data
     teachersList.value = teachersRes.data
     roomsList.value = roomsRes.data
-
-    // Build lookup maps
-    const classMap = Object.fromEntries(classesList.value.map(c => [c.id, c]))
-    const teacherMap = Object.fromEntries(teachersList.value.map(t => [t.id, t]))
-    const roomMap = Object.fromEntries(roomsList.value.map(r => [r.id, r]))
-
-    // Fill schedule grid
-    for (const cell of scheduleRes.data) {
-      const dayIndex = cell.day - 1
-      const slotIndex = cell.slot - 1
-      if (cell.class_id) {
-        const data = classMap[cell.class_id] || { name: cell.class_name, code: cell.class_code }
-        schedule[slotIndex][dayIndex].class = data
-      }
-      if (cell.teacher_id) {
-        schedule[slotIndex][dayIndex].professor = teacherMap[cell.teacher_id] || { name: cell.teacher_name }
-      }
-      if (cell.room_id) {
-        schedule[slotIndex][dayIndex].room = roomMap[cell.room_id] || { name: cell.room_name }
-      }
-    }
+    await loadSchedule()
   } catch (error) {
     console.error("Error loading schedule data:", error)
   }
+})
+
+watch(currentSemester, () => {
+  loadSchedule()
 })
 
 function onDragStart(item, event) {
@@ -116,7 +141,7 @@ async function onDrop(slotIndex, dayIndex, event) {
   if (!rawData) return
   const item = JSON.parse(rawData)
 
-  let updatePayload = { day: dayIndex + 1, slot: slotIndex + 1 }
+  let updatePayload = { day: dayIndex + 1, slot: slotIndex + 1, semester: currentSemester.value }
   if (item.type === 'Clases') {
     schedule[slotIndex][dayIndex].class = item
     updatePayload.class_id = item.id
@@ -131,7 +156,13 @@ async function onDrop(slotIndex, dayIndex, event) {
   try {
     await axios.post('/api/schedule', updatePayload)
   } catch (error) {
-    console.error("Error updating schedule cell:", error)
+    if (error.response && error.response.data && error.response.data.error) {
+      alert(error.response.data.error)
+      // revert UI change if conflict
+      await loadSchedule()
+    } else {
+      console.error("Error updating schedule cell:", error)
+    }
   }
 }
 </script>
