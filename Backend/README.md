@@ -7,9 +7,11 @@ Este backend usa **Express** y la librería `pg` para conectarse a PostgreSQL (p
 - **classes**: `id`, `name`
 - **teachers**: `id`, `name`
 - **rooms**: `id`, `name`
-- **schedules**: `id`, `view_type` (`class`/`teacher`/`room`), `row` (día), `col` (hora), `item_id` (referencia a la clase/profesor/sala)
+- **schedules**: `id`, `view_type` (`class`/`teacher`/`room`), `row` (día), `col` (hora), `item_id` (referencia a la clase/profesor/sala), `semester`
 
 Con estas tablas se puede almacenar lo que el usuario coloca en cada celda del horario.
+
+Al asignar una sala se verifica que no esté ocupada en el mismo día y bloque por otro semestre. Si existe conflicto el backend responde con error.
 
 ## Ejemplo de endpoints
 

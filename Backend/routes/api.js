@@ -34,18 +34,20 @@ router.get('/rooms', async (req, res) => {
 
 // Obtener el horario completo (todas las celdas con sus asignaciones)
 router.get('/schedule', async (req, res) => {
+  const semester = parseInt(req.query.semester, 10) || 1;
   try {
     const query = `
-      SELECT sb.day, sb.slot, 
+      SELECT sb.day, sb.slot, sb.semester,
              sb.class_id, classes.name AS class_name,
              sb.teacher_id, teachers.name AS teacher_name,
              sb.room_id, rooms.name AS room_name
       FROM schedule_blocks sb
       LEFT JOIN classes ON sb.class_id = classes.id
       LEFT JOIN teachers ON sb.teacher_id = teachers.id
-      LEFT JOIN rooms ON sb.room_id = rooms.id;
+      LEFT JOIN rooms ON sb.room_id = rooms.id
+      WHERE sb.semester = $1;
     `;
-    const result = await pool.query(query);
+    const result = await pool.query(query, [semester]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -54,31 +56,46 @@ router.get('/schedule', async (req, res) => {
 
 // Actualizar una celda del horario (asignar clase, profesor o sala)
 router.post('/schedule', async (req, res) => {
-  const { day, slot, class_id, teacher_id, room_id } = req.body;
+  const { day, slot, semester, class_id, teacher_id, room_id } = req.body;
   try {
     if (class_id !== undefined) {
       await pool.query(
-        `INSERT INTO schedule_blocks(day, slot, class_id) 
-         VALUES($1, $2, $3)
-         ON CONFLICT (day, slot) DO UPDATE SET class_id = EXCLUDED.class_id`,
-        [day, slot, class_id]
+        `INSERT INTO schedule_blocks(day, slot, semester, class_id)
+         VALUES($1, $2, $3, $4)
+         ON CONFLICT (day, slot, semester) DO UPDATE SET class_id = EXCLUDED.class_id`,
+        [day, slot, semester, class_id]
       );
     }
     if (teacher_id !== undefined) {
       await pool.query(
-        `INSERT INTO schedule_blocks(day, slot, teacher_id) 
-         VALUES($1, $2, $3)
-         ON CONFLICT (day, slot) DO UPDATE SET teacher_id = EXCLUDED.teacher_id`,
-        [day, slot, teacher_id]
+        `INSERT INTO schedule_blocks(day, slot, semester, teacher_id)
+         VALUES($1, $2, $3, $4)
+         ON CONFLICT (day, slot, semester) DO UPDATE SET teacher_id = EXCLUDED.teacher_id`,
+        [day, slot, semester, teacher_id]
       );
     }
     if (room_id !== undefined) {
-      await pool.query(
-        `INSERT INTO schedule_blocks(day, slot, room_id) 
-         VALUES($1, $2, $3)
-         ON CONFLICT (day, slot) DO UPDATE SET room_id = EXCLUDED.room_id`,
-        [day, slot, room_id]
-      );
+        // Buscar conflicto y devolver los datos del bloque donde está ocupada
+        const conflict = await pool.query(
+            `SELECT semester, class_id, teacher_id
+            FROM schedule_blocks
+            WHERE day=$1 AND slot=$2 AND room_id=$3 AND semester <> $4`,
+            [day, slot, room_id, semester]
+        );
+        if (conflict.rowCount > 0) {
+            // Traemos más información si quieres (por ejemplo nombres de clase/profesor)
+            // pero lo más importante es el semestre ocupado
+            return res.status(400).json({
+            error: 'Sala ocupada en ese horario',
+            conflict: conflict.rows[0] // Esto trae: {semester: X, class_id: Y, ...}
+            });
+        }
+        await pool.query(
+            `INSERT INTO schedule_blocks(day, slot, semester, room_id)
+            VALUES($1, $2, $3, $4)
+            ON CONFLICT (day, slot, semester) DO UPDATE SET room_id = EXCLUDED.room_id`,
+            [day, slot, semester, room_id]
+        );
     }
     res.sendStatus(200);
   } catch (err) {
