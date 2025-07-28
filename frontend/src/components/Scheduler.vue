@@ -34,8 +34,8 @@
               @dragover.prevent
               @drop="onDrop(ri, ci, $event)"
             >
-              <span v-if="schedule[currentView][ri][ci]">
-                {{ schedule[currentView][ri][ci].name }}
+              <span v-if="schedule[ri][ci][currentField]">
+                {{ schedule[ri][ci][currentField].name }}
               </span>
             </td>
           </tr>
@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 
 const views = ['Clases', 'Profesores', 'Salas']
 const currentView = ref('Clases')
@@ -72,17 +72,26 @@ const items = reactive({
 const rows = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const cols = ['1', '2', '3', '4', '5', '6', '7', '8']
 
-function emptyGrid() {
-  return Array(rows.length)
-    .fill(null)
-    .map(() => Array(cols.length).fill(null))
+function createCell() {
+  return { class: null, professor: null, room: null }
 }
 
-const schedule = reactive({
-  Clases: emptyGrid(),
-  Profesores: emptyGrid(),
-  Salas: emptyGrid()
-})
+function emptyGrid() {
+  return Array.from({ length: rows.length }, () =>
+    Array.from({ length: cols.length }, () => createCell())
+  )
+}
+
+// single grid containing class, professor and room per cell
+const schedule = reactive(emptyGrid())
+
+const fieldMap = {
+  Clases: 'class',
+  Profesores: 'professor',
+  Salas: 'room'
+}
+
+const currentField = computed(() => fieldMap[currentView.value])
 
 function onDragStart(item, evt) {
   evt.dataTransfer.setData('application/json', JSON.stringify(item))
@@ -91,7 +100,8 @@ function onDragStart(item, evt) {
 function onDrop(r, c, evt) {
   const data = evt.dataTransfer.getData('application/json')
   if (data) {
-    schedule[currentView.value][r][c] = JSON.parse(data)
+    const item = JSON.parse(data)
+    schedule[r][c][currentField.value] = item
   }
 }
 </script>
