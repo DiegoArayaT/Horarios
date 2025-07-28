@@ -144,5 +144,6 @@ function onDrop(r, c, evt) {
 }
 .cell {
   background: #fff;
+  color: black;
 }
 </style>
