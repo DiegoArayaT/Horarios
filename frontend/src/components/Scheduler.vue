@@ -6,47 +6,25 @@
       </select>
     </div>
     <div class="content">
-      <div class="sidebar">
-        <div
-          v-for="item in items[currentView]"
-          :key="item.id"
-          class="card"
-          draggable="true"
-          @dragstart="onDragStart(item, $event)"
-        >
-          {{ item.name }}
-        </div>
-      </div>
-      <table class="schedule">
-        <thead>
-          <tr>
-            <th></th>
-            <th v-for="(c, ci) in cols" :key="ci">{{ c }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(day, ri) in rows" :key="ri">
-            <th>{{ day }}</th>
-            <td
-              v-for="(c, ci) in cols"
-              :key="ci"
-              class="cell"
-              @dragover.prevent
-              @drop="onDrop(ri, ci, $event)"
-            >
-              <span v-if="schedule[ri][ci][currentField]">
-                {{ schedule[ri][ci][currentField].name }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <SchedulerSidebar
+        :items="items[currentView]"
+        :onDragStart="onDragStart"
+      />
+      <ScheduleGrid
+        :rows="rows"
+        :cols="cols"
+        :schedule="schedule"
+        :currentField="currentField"
+        :onDrop="onDrop"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, computed } from 'vue'
+import SchedulerSidebar from './SchedulerSidebar.vue'
+import ScheduleGrid from './ScheduleGrid.vue'
 
 const views = ['Clases', 'Profesores', 'Salas']
 const currentView = ref('Clases')
@@ -106,44 +84,4 @@ function onDrop(r, c, evt) {
 }
 </script>
 
-<style scoped>
-.scheduler {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.header {
-  text-align: left;
-}
-.content {
-  display: flex;
-  gap: 1rem;
-}
-.sidebar {
-  width: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.card {
-  padding: 0.5rem;
-  background: #e5e5e5;
-  color: #000;
-  border-radius: 4px;
-  cursor: grab;
-}
-.schedule {
-  border-collapse: collapse;
-}
-.schedule th,
-.schedule td {
-  border: 1px solid #888;
-  width: 80px;
-  height: 40px;
-  text-align: center;
-}
-.cell {
-  background: #fff;
-  color: black;
-}
-</style>
+<style scoped src="./Scheduler.css"></style>
