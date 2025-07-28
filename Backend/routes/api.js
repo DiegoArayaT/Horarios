@@ -75,20 +75,27 @@ router.post('/schedule', async (req, res) => {
       );
     }
     if (room_id !== undefined) {
-      const conflict = await pool.query(
-        `SELECT 1 FROM schedule_blocks
-         WHERE day=$1 AND slot=$2 AND room_id=$3 AND semester <> $4`,
-        [day, slot, room_id, semester]
-      );
-      if (conflict.rowCount > 0) {
-        return res.status(400).json({ error: 'Sala ocupada en ese horario' });
-      }
-      await pool.query(
-        `INSERT INTO schedule_blocks(day, slot, semester, room_id)
-         VALUES($1, $2, $3, $4)
-         ON CONFLICT (day, slot, semester) DO UPDATE SET room_id = EXCLUDED.room_id`,
-        [day, slot, semester, room_id]
-      );
+        // Buscar conflicto y devolver los datos del bloque donde está ocupada
+        const conflict = await pool.query(
+            `SELECT semester, class_id, teacher_id
+            FROM schedule_blocks
+            WHERE day=$1 AND slot=$2 AND room_id=$3 AND semester <> $4`,
+            [day, slot, room_id, semester]
+        );
+        if (conflict.rowCount > 0) {
+            // Traemos más información si quieres (por ejemplo nombres de clase/profesor)
+            // pero lo más importante es el semestre ocupado
+            return res.status(400).json({
+            error: 'Sala ocupada en ese horario',
+            conflict: conflict.rows[0] // Esto trae: {semester: X, class_id: Y, ...}
+            });
+        }
+        await pool.query(
+            `INSERT INTO schedule_blocks(day, slot, semester, room_id)
+            VALUES($1, $2, $3, $4)
+            ON CONFLICT (day, slot, semester) DO UPDATE SET room_id = EXCLUDED.room_id`,
+            [day, slot, semester, room_id]
+        );
     }
     res.sendStatus(200);
   } catch (err) {
