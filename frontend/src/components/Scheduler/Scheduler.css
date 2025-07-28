@@ -1,0 +1,132 @@
+.scheduler-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0;
+  color: black;
+}
+
+.scheduler-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 38px 0 0 0;
+  width: 100vw;
+}
+
+/* Sidebar */
+.sidebar {
+  min-width: 220px;
+  max-width: 220px;
+  background: #f8f4fa;
+  padding: 16px 10px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  height: 613.52px;
+  overflow-y: auto;
+  color: black;
+}
+.sidebar-select {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  background: #f6f6f6;
+  color: black;
+}
+.sidebar-table {
+  width: 100%;
+  font-size: 0.98em;
+}
+.sidebar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px 7px 10px;
+  border-bottom: 1px solid #dedede;
+  background: #fff;
+  margin-bottom: 2px;
+  border-radius: 5px;
+  cursor: grab;
+  font-family: inherit;
+  font-size: 1em;
+}
+.sidebar-row-header {
+  font-weight: bold;
+  background: none;
+  border-bottom: 2px solid #444;
+  cursor: default;
+  margin-bottom: 8px;
+  color: #3d2954;
+  font-size: 1.07em;
+}
+
+/* Tabla de horario */
+.schedule-table-wrapper {
+  background: #f7f4fa;
+  border-radius: 8px;
+  padding: 20px 20px 30px 20px;
+  border: 1.5px solid #bbb;
+  margin-right: 32px;
+}
+
+.view-selector-top {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1em;
+}
+.view-select {
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+}
+
+.schedule-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 1px 4px 0 #0002;
+  font-size: 1em;
+}
+.schedule-table th, .schedule-table td {
+  border: 2px solid #222;
+  min-width: 105px;
+  min-height: 38px;
+  text-align: center;
+  vertical-align: top;
+  padding: 7px 3px;
+  font-size: 1em;
+}
+.schedule-table th.hours-header, .schedule-table th.hours-cell {
+  background: #f3f3f3;
+  font-weight: bold;
+  min-width: 110px;
+  color: #222;
+  font-size: 1.03em;
+}
+.schedule-cell {
+  background: #fff;
+  height: 48px;
+  vertical-align: top;
+}
+
+/* Celda de contenido */
+.cell-item {
+  display: block;
+  text-align: left;
+  font-size: 0.97em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 1px;
+}
+.class-item { font-weight: bold; color: #2a2a2a;}
+.professor-item { color: #644e9b;}
+.room-item { color: #0d728b;}
